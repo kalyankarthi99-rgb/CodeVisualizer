@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longest Palindromic Substring - DP Visualization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .font-mono {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+
+        /* Grid Animations */
+        .cell {
+            transition: all 0.3s ease;
+        }
+        
+        .cell-true {
+            background-color: #10b981; /* Emerald 500 */
+            color: white;
+            border-color: #059669;
+        }
+
+        .cell-false {
+            background-color: #ef4444; /* Red 500 */
+            color: white;
+            border-color: #b91c1c;
+        }
+
+        .cell-current {
+            background-color: #f59e0b; /* Amber 500 */
+            color: white;
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+
+        /* Input styling */
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+
+        /* Code Highlighting */
+        .code-line {
+            padding: 2px 8px;
+            border-left: 2px solid transparent;
+            opacity: 0.7;
+            transition: all 0.2s;
+        }
+        .code-active {
+            background-color: #312e81; /* Indigo 900 */
+            border-left-color: #818cf8; /* Indigo 400 */
+            opacity: 1;
+            font-weight: 500;
+            color: #e0e7ff;
+        }
+        .tab-active {
+            border-bottom: 2px solid #6366f1;
+            color: #6366f1;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 p-2 rounded-lg">
+                <i class="fas fa-code-branch text-white text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-white">Longest Palindromic Substring</h1>
+                <p class="text-xs text-slate-400">Dynamic Programming Visualization (O(n²))</p>
+            </div>
+        </div>
+        <div class="flex gap-4 text-sm">
+             <button onclick="switchTab('desc')" class="text-slate-400 hover:text-white transition-colors"><i class="fas fa-book mr-1"></i> Problem</button>
+             <button onclick="switchTab('code')" class="text-slate-400 hover:text-white transition-colors"><i class="fas fa-code mr-1"></i> Code</button>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Panel: Controls & Input -->
+        <aside class="w-80 bg-slate-900 border-r border-slate-800 p-6 flex flex-col gap-6 overflow-y-auto shrink-0 z-20 shadow-xl">
+            
+            <!-- Input Section -->
+            <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-300">Input String</label>
+                <div class="flex gap-2">
+                    <input type="text" id="inputString" value="babad" maxlength="12" 
+                        class="w-full bg-slate-800 border border-slate-700 text-white px-3 py-2 rounded-md font-mono tracking-widest uppercase focus:border-indigo-500 placeholder-slate-600 transition-colors"
+                        placeholder="Type string...">
+                    <button id="btnReset" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition-colors">
+                        Set
+                    </button>
+                </div>
+                <p class="text-xs text-slate-500">Max length: 12 characters</p>
+            </div>
+
+            <!-- Playback Controls -->
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-4">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Playback</span>
+                </div>
+                
+                <div class="flex justify-center gap-3">
+                    <button id="btnPrev" class="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-step-backward"></i>
+                    </button>
+                    <button id="btnPlay" class="w-12 h-12 rounded-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105">
+                        <i class="fas fa-play pl-1"></i>
+                    </button>
+                    <button id="btnNext" class="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-step-forward"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs text-slate-400">
+                        <span>Speed</span>
+                        <span id="speedLabel">1x</span>
+                    </div>
+                    <input type="range" id="speedRange" min="1" max="50" value="10" class="w-full h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="space-y-3">
+                <h3 class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Legend</h3>
+                <div class="grid grid-cols-1 gap-2 text-sm">
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 bg-emerald-500 rounded border border-emerald-600"></div>
+                        <span class="text-slate-300">Palindrome (True)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 bg-red-500 rounded border border-red-600"></div>
+                        <span class="text-slate-300">Not Palindrome (False)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 bg-amber-500 rounded border border-amber-600"></div>
+                        <span class="text-slate-300">Comparing s[i] vs s[j]</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="mt-auto bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                <div class="text-xs text-slate-400 mb-1">Current Longest</div>
+                <div id="currentLongestDisplay" class="text-lg font-mono font-bold text-indigo-400 truncate">
+                    -
+                </div>
+                <div class="flex justify-between mt-2 text-xs text-slate-500">
+                    <span>Length: <span id="currentLength" class="text-slate-300">0</span></span>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Right Section: Visualization + Tabs -->
+        <section class="flex-1 flex flex-col bg-slate-950 relative overflow-hidden">
+            
+            <!-- Visualization Area (Top 60%) -->
+            <div class="flex-grow basis-3/5 overflow-auto flex flex-col relative border-b border-slate-800">
+                <div class="bg-slate-900/50 border-b border-slate-800 p-3 shadow-md z-10 text-center min-h-[60px] flex items-center justify-center">
+                    <p id="instructionText" class="text-slate-200 font-medium">
+                        Enter a string to begin visualization.
+                    </p>
+                </div>
+
+                <div class="flex-1 flex items-center justify-center p-8" id="canvasContainer">
+                    <div class="relative">
+                        <!-- String Visualization -->
+                        <div class="flex justify-center mb-8 gap-2" id="stringContainer">
+                            <!-- Characters injected here -->
+                        </div>
+
+                        <!-- Matrix -->
+                        <div class="inline-block bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-2xl relative">
+                            <!-- Row Labels (Indices) -->
+                            <div class="absolute -left-8 top-12 bottom-0 flex flex-col justify-around text-slate-500 font-mono text-xs w-6 py-2" id="rowIndices"></div>
+                            
+                            <!-- Col Labels (Indices) -->
+                            <div class="absolute -top-8 left-12 right-0 flex justify-around text-slate-500 font-mono text-xs h-6 px-2" id="colIndices"></div>
+
+                            <!-- Grid -->
+                            <div id="gridContainer" class="grid gap-1">
+                                <!-- Grid cells injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Tabs Area (Bottom 40%) -->
+            <div class="basis-2/5 bg-slate-900 flex flex-col min-h-0">
+                <!-- Tab Headers -->
+                <div class="flex border-b border-slate-800">
+                    <button id="tab-code" class="px-6 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors tab-active" onclick="switchTab('code')">
+                        Code Trace
+                    </button>
+                    <button id="tab-desc" class="px-6 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors" onclick="switchTab('desc')">
+                        Problem Description
+                    </button>
+                </div>
+
+                <!-- Tab Content: Code -->
+                <div id="content-code" class="flex-1 flex overflow-hidden">
+                    <!-- Code Text -->
+                    <div class="w-1/2 overflow-auto p-4 border-r border-slate-800 bg-slate-950">
+                        <pre class="font-mono text-xs md:text-sm text-slate-400 leading-6" id="codeDisplay"></pre>
+                    </div>
+                    <!-- Detailed Explanation -->
+                    <div class="w-1/2 p-6 overflow-auto bg-slate-900">
+                        <h4 class="text-indigo-400 font-bold mb-2 text-sm uppercase tracking-wider">Current Step</h4>
+                        <div id="stepExplanation" class="text-slate-300 text-sm leading-relaxed">
+                            Press play to see the step-by-step logic execution here.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Description -->
+                <div id="content-desc" class="flex-1 overflow-auto p-8 hidden">
+                    <div class="max-w-3xl mx-auto space-y-6 text-slate-300">
+                        <div>
+                            <h2 class="text-xl font-bold text-white mb-2">Longest Palindromic Substring</h2>
+                            <p>Given a string <code>s</code>, find the longest substring in <code>s</code> that is a palindrome (reads the same forwards and backwards).</p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-2">Dynamic Programming Approach</h3>
+                            <p class="mb-2">We can solve this in <code>O(n²)</code> time using a 2D boolean table <code>dp[i][j]</code>.</p>
+                            <ul class="list-disc pl-5 space-y-1">
+                                <li><code>dp[i][j]</code> is <code>true</code> if the substring <code>s[i...j]</code> is a palindrome.</li>
+                                <li>Otherwise, it is <code>false</code>.</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                            <h3 class="text-sm font-bold text-white mb-2 uppercase">Recurrence Relation</h3>
+                            <p class="font-mono text-sm text-indigo-300 mb-2">dp[i][j] = (s[i] == s[j]) && dp[i+1][j-1]</p>
+                            <p class="text-xs text-slate-400">
+                                This means a string is a palindrome if:
+                                <br>1. The first and last characters match.
+                                <br>2. The substring inside them (from i+1 to j-1) is also a palindrome.
+                            </p>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-2">Base Cases</h3>
+                            <ul class="list-disc pl-5 space-y-1">
+                                <li><strong>Length 1:</strong> All single characters are palindromes (<code>dp[i][i] = true</code>).</li>
+                                <li><strong>Length 2:</strong> <code>s[i...i+1]</code> is a palindrome if <code>s[i] == s[i+1]</code>.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+    </main>
+
+<script>
+/**
+ * Application State
+ */
+const state = {
+    str: '',
+    steps: [],
+    currentStepIndex: -1,
+    isPlaying: false,
+    speed: 500, // ms per step
+    timer: null,
+    dp: []
+};
+
+// DOM Elements
+const els = {
+    input: document.getElementById('inputString'),
+    btnReset: document.getElementById('btnReset'),
+    btnPrev: document.getElementById('btnPrev'),
+    btnNext: document.getElementById('btnNext'),
+    btnPlay: document.getElementById('btnPlay'),
+    speedRange: document.getElementById('speedRange'),
+    speedLabel: document.getElementById('speedLabel'),
+    grid: document.getElementById('gridContainer'),
+    strContainer: document.getElementById('stringContainer'),
+    instruction: document.getElementById('instructionText'),
+    rowIndices: document.getElementById('rowIndices'),
+    colIndices: document.getElementById('colIndices'),
+    longestDisplay: document.getElementById('currentLongestDisplay'),
+    lengthDisplay: document.getElementById('currentLength'),
+    codeDisplay: document.getElementById('codeDisplay'),
+    stepExplanation: document.getElementById('stepExplanation'),
+    tabs: {
+        code: document.getElementById('tab-code'),
+        desc: document.getElementById('tab-desc')
+    },
+    contents: {
+        code: document.getElementById('content-code'),
+        desc: document.getElementById('content-desc')
+    }
+};
+
+// Algorithm Source Code (Java)
+const algorithmCode = [
+    { text: "public String solve(String s) {", indent: 0 },
+    { text: "int n = s.length();", indent: 1 },
+    { text: "boolean[][] dp = new boolean[n][n];", indent: 1 },
+    { text: "// Phase 1: Length 1", indent: 1 },
+    { text: "for (int i = 0; i < n; i++) {", indent: 1 },
+    { text: "dp[i][i] = true;", indent: 2 },
+    { text: "}", indent: 1 },
+    { text: "// Phase 2: Length 2", indent: 1 },
+    { text: "for (int i = 0; i < n - 1; i++) {", indent: 1 },
+    { text: "if (s.charAt(i) == s.charAt(i+1)) {", indent: 2 },
+    { text: "dp[i][i+1] = true;", indent: 3 },
+    { text: "}", indent: 2 },
+    { text: "}", indent: 1 },
+    { text: "// Phase 3: Length 3+", indent: 1 },
+    { text: "for (int len = 3; len <= n; len++) {", indent: 1 },
+    { text: "for (int i = 0; i <= n - len; i++) {", indent: 2 },
+    { text: "int j = i + len - 1;", indent: 3 },
+    { text: "if (s.charAt(i) == s.charAt(j) && dp[i+1][j-1]) {", indent: 3 },
+    { text: "dp[i][j] = true;", indent: 4 },
+    { text: "}", indent: 3 },
+    { text: "}", indent: 2 },
+    { text: "}", indent: 1 },
+    { text: "}", indent: 0 }
+];
+
+// Step Types
+const STEP_TYPE = {
+    INIT: 'INIT',
+    COMPARE: 'COMPARE',
+    SET_VAL: 'SET_VAL',
+    UPDATE_MAX: 'UPDATE_MAX',
+    FINISH: 'FINISH'
+};
+
+// Initialize
+function init() {
+    renderCode();
+    setupEventListeners();
+    resetVisualization(els.input.value);
+}
+
+function renderCode() {
+    els.codeDisplay.innerHTML = algorithmCode.map((line, idx) => {
+        const padding = '  '.repeat(line.indent);
+        return `<div id="code-line-${idx}" class="code-line">${padding}${line.text}</div>`;
+    }).join('');
+}
+
+function switchTab(tabName) {
+    // Reset classes
+    Object.values(els.tabs).forEach(el => {
+        el.classList.remove('tab-active', 'text-white');
+        el.classList.add('text-slate-400');
+    });
+    Object.values(els.contents).forEach(el => el.classList.add('hidden'));
+
+    // Activate
+    els.tabs[tabName].classList.add('tab-active', 'text-white');
+    els.tabs[tabName].classList.remove('text-slate-400');
+    els.contents[tabName].classList.remove('hidden');
+}
+
+function setupEventListeners() {
+    els.btnReset.addEventListener('click', () => resetVisualization(els.input.value));
+    els.input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') resetVisualization(els.input.value);
+    });
+    
+    els.btnNext.addEventListener('click', () => {
+        stopPlayback();
+        nextStep();
+    });
+    
+    els.btnPrev.addEventListener('click', () => {
+        stopPlayback();
+        prevStep();
+    });
+    
+    els.btnPlay.addEventListener('click', togglePlayback);
+    
+    els.speedRange.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        state.speed = Math.max(50, 1500 - (val * 28)); 
+        els.speedLabel.textContent = `${(1000/state.speed).toFixed(1)}x`;
+        if (state.isPlaying) {
+            stopPlayback();
+            startPlayback();
+        }
+    });
+}
+
+function resetVisualization(inputStr) {
+    stopPlayback();
+    
+    // Validate
+    let cleanStr = inputStr.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12).toUpperCase();
+    if (!cleanStr) cleanStr = "BABAD";
+    els.input.value = cleanStr;
+    state.str = cleanStr;
+    
+    // Reset Data
+    const n = state.str.length;
+    state.dp = Array(n).fill().map(() => Array(n).fill(null));
+    state.steps = generateSteps(state.str);
+    state.currentStepIndex = -1;
+    
+    // Build UI
+    buildStringUI(state.str);
+    buildGridUI(n);
+    
+    // Reset Stats & Code
+    els.longestDisplay.textContent = "-";
+    els.lengthDisplay.textContent = "0";
+    els.instruction.textContent = "Ready. Press Play to start.";
+    els.stepExplanation.textContent = "Algorithm initialized. The table is empty.";
+    highlightCode(-1);
+    updateControls();
+}
+
+/**
+ * Generates all animation steps with Code Line Mapping
+ */
+function generateSteps(s) {
+    const steps = [];
+    const n = s.length;
+    const dp = Array(n).fill().map(() => Array(n).fill(false));
+    let start = 0, maxLength = 1;
+
+    // Line numbers correspond to `algorithmCode` array index (Java version)
+    
+    // Phase 1: Length 1
+    steps.push({ type: STEP_TYPE.INIT, line: 4, msg: "Phase 1: Initialize all substrings of length 1 (single characters) as palindromes." });
+    for (let i = 0; i < n; i++) {
+        dp[i][i] = true;
+        steps.push({
+            type: STEP_TYPE.SET_VAL,
+            i, j: i,
+            val: true,
+            line: 5,
+            msg: `Base Case: Single character '${s[i]}' at index ${i} is always a palindrome.`
+        });
+        steps.push({
+            type: STEP_TYPE.UPDATE_MAX,
+            start: i, len: 1,
+            line: 5,
+            msg: `Found palindrome of length 1: ${s.substring(i, i+1)}`
+        });
+    }
+
+    // Phase 2: Length 2
+    steps.push({ type: STEP_TYPE.INIT, line: 8, msg: "Phase 2: Check all substrings of length 2." });
+    for (let i = 0; i < n - 1; i++) {
+        steps.push({
+            type: STEP_TYPE.COMPARE,
+            i, j: i + 1,
+            line: 9,
+            msg: `Checking s.charAt(${i}) ('${s[i]}') == s.charAt(${i+1}) ('${s[i+1]}')`
+        });
+        
+        if (s[i] === s[i+1]) {
+            dp[i][i+1] = true;
+            start = i;
+            maxLength = 2;
+            steps.push({
+                type: STEP_TYPE.SET_VAL,
+                i, j: i+1,
+                val: true,
+                line: 10,
+                msg: `Match! '${s[i]}${s[i+1]}' is a palindrome.`
+            });
+            steps.push({
+                type: STEP_TYPE.UPDATE_MAX,
+                start: i, len: 2,
+                line: 10,
+                msg: `New longest palindrome: ${s.substring(i, i+2)}`
+            });
+        } else {
+            dp[i][i+1] = false;
+            steps.push({
+                type: STEP_TYPE.SET_VAL,
+                i, j: i+1,
+                val: false,
+                line: 9, // Stick to comparison line for failure
+                msg: `Mismatch. '${s[i]}${s[i+1]}' is not a palindrome.`
+            });
+        }
+    }
+
+    // Phase 3: Length 3 to n
+    steps.push({ type: STEP_TYPE.INIT, line: 14, msg: "Phase 3: Check substrings of length 3 and greater." });
+    for (let len = 3; len <= n; len++) {
+        steps.push({ type: STEP_TYPE.INIT, line: 14, msg: `Checking all substrings of length ${len}.` });
+        
+        for (let i = 0; i <= n - len; i++) {
+            let j = i + len - 1;
+            
+            steps.push({
+                type: STEP_TYPE.COMPARE,
+                i, j,
+                line: 17,
+                msg: `Checking s.charAt(${i}) == s.charAt(${j}) ('${s[i]}' vs '${s[j]}')`
+            });
+
+            if (s[i] === s[j] && dp[i+1][j-1]) {
+                dp[i][j] = true;
+                steps.push({
+                    type: STEP_TYPE.SET_VAL,
+                    i, j,
+                    val: true,
+                    line: 18,
+                    msg: `Match! Ends match AND inner part dp[${i+1}][${j-1}] is True.`
+                });
+
+                if (len > maxLength) {
+                    start = i;
+                    maxLength = len;
+                    steps.push({
+                        type: STEP_TYPE.UPDATE_MAX,
+                        start, len,
+                        line: 18,
+                        msg: `New longest palindrome found: ${s.substring(start, start+len)}`
+                    });
+                }
+            } else {
+                dp[i][j] = false;
+                let reason = s[i] !== s[j] ? `Characters '${s[i]}' and '${s[j]}' don't match.` : `Inner substring s[${i+1}]...s[${j-1}] is not a palindrome.`;
+                steps.push({
+                    type: STEP_TYPE.SET_VAL,
+                    i, j,
+                    val: false,
+                    line: 17,
+                    msg: `Not a palindrome. ${reason}`
+                });
+            }
+        }
+    }
+
+    steps.push({
+        type: STEP_TYPE.FINISH,
+        line: -1,
+        msg: `Algorithm Complete. Longest Palindromic Substring is: ${s.substring(start, start + maxLength)}`
+    });
+
+    return steps;
+}
+
+/**
+ * UI Builders
+ */
+function buildStringUI(str) {
+    els.strContainer.innerHTML = '';
+    str.split('').forEach((char, idx) => {
+        const div = document.createElement('div');
+        div.className = 'w-10 h-10 md:w-12 md:h-12 flex items-center justify-center border-2 border-slate-700 rounded-lg text-slate-300 font-bold font-mono text-lg transition-all duration-300';
+        div.id = `char-${idx}`;
+        div.textContent = char;
+        
+        const idxLabel = document.createElement('span');
+        idxLabel.className = 'absolute -top-6 text-xs text-slate-600 font-mono';
+        idxLabel.textContent = idx;
+        div.appendChild(idxLabel);
+        
+        els.strContainer.appendChild(div);
+    });
+}
+
+function buildGridUI(n) {
+    els.grid.innerHTML = '';
+    els.rowIndices.innerHTML = '';
+    els.colIndices.innerHTML = '';
+    
+    els.grid.style.gridTemplateColumns = `repeat(${n}, minmax(0, 1fr))`;
+
+    for(let i=0; i<n; i++) {
+        const rLabel = document.createElement('div');
+        rLabel.textContent = i;
+        rLabel.className = "flex items-center justify-center h-[40px] md:h-[48px]";
+        els.rowIndices.appendChild(rLabel);
+
+        const cLabel = document.createElement('div');
+        cLabel.textContent = i;
+        els.colIndices.appendChild(cLabel);
+    }
+
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell w-10 h-10 md:w-12 md:h-12 border border-slate-800 bg-slate-800/50 rounded flex items-center justify-center text-xs font-mono text-slate-500';
+            cell.id = `cell-${i}-${j}`;
+            
+            if (i > j) {
+                cell.classList.add('opacity-20', 'bg-transparent');
+                cell.classList.remove('bg-slate-800/50');
+                cell.style.borderColor = 'transparent';
+            }
+            els.grid.appendChild(cell);
+        }
+    }
+}
+
+/**
+ * Playback Control
+ */
+function togglePlayback() {
+    if (state.isPlaying) {
+        stopPlayback();
+    } else {
+        startPlayback();
+    }
+}
+
+function startPlayback() {
+    state.isPlaying = true;
+    els.btnPlay.innerHTML = '<i class="fas fa-pause pl-0"></i>';
+    els.btnPlay.classList.add('bg-amber-500', 'hover:bg-amber-600');
+    els.btnPlay.classList.remove('bg-indigo-500', 'hover:bg-indigo-600');
+    
+    // Switch to code tab automatically if playing
+    switchTab('code');
+
+    if (state.currentStepIndex >= state.steps.length - 1) {
+        resetUIState(); 
+        state.currentStepIndex = -1;
+    }
+    
+    playLoop();
+}
+
+function stopPlayback() {
+    state.isPlaying = false;
+    clearTimeout(state.timer);
+    els.btnPlay.innerHTML = '<i class="fas fa-play pl-1"></i>';
+    els.btnPlay.classList.remove('bg-amber-500', 'hover:bg-amber-600');
+    els.btnPlay.classList.add('bg-indigo-500', 'hover:bg-indigo-600');
+}
+
+function playLoop() {
+    if (!state.isPlaying) return;
+    
+    if (state.currentStepIndex < state.steps.length - 1) {
+        nextStep();
+        state.timer = setTimeout(playLoop, state.speed);
+    } else {
+        stopPlayback();
+    }
+}
+
+function nextStep() {
+    if (state.currentStepIndex < state.steps.length - 1) {
+        state.currentStepIndex++;
+        applyStep(state.steps[state.currentStepIndex]);
+        updateControls();
+    }
+}
+
+function prevStep() {
+    if (state.currentStepIndex >= 0) {
+        const targetIdx = state.currentStepIndex - 1;
+        resetUIState();
+        state.currentStepIndex = -1;
+        for(let i=0; i<=targetIdx; i++) {
+            applyStep(state.steps[i], true);
+            state.currentStepIndex = i;
+        }
+        updateControls();
+    }
+}
+
+function highlightCode(lineIndex) {
+    document.querySelectorAll('.code-line').forEach(el => el.classList.remove('code-active'));
+    if (lineIndex !== undefined && lineIndex >= 0) {
+        const el = document.getElementById(`code-line-${lineIndex}`);
+        if (el) {
+            el.classList.add('code-active');
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+}
+
+function resetUIState() {
+    document.querySelectorAll('.cell').forEach(c => {
+        c.className = c.className.replace(/cell-(true|false|current|check)/g, '');
+        c.classList.remove('bg-emerald-500', 'bg-red-500', 'bg-amber-500', 'border-emerald-600', 'border-red-600', 'text-white');
+        c.classList.add('bg-slate-800/50', 'text-slate-500');
+        if(!c.classList.contains('opacity-20')) c.textContent = '';
+    });
+    
+    document.querySelectorAll('#stringContainer > div').forEach(c => {
+        c.classList.remove('bg-amber-500', 'bg-indigo-600', 'border-amber-400', 'text-white');
+        c.classList.add('border-slate-700', 'text-slate-300');
+    });
+
+    els.longestDisplay.textContent = "-";
+    els.lengthDisplay.textContent = "0";
+    els.instruction.textContent = "Reset.";
+    highlightCode(-1);
+}
+
+function updateControls() {
+    els.btnPrev.disabled = state.currentStepIndex < 0;
+    els.btnNext.disabled = state.currentStepIndex >= state.steps.length - 1;
+}
+
+function applyStep(step, fastMode = false) {
+    els.instruction.textContent = step.msg;
+    els.stepExplanation.textContent = step.msg;
+
+    // Highlight Code
+    if (!fastMode) highlightCode(step.line);
+
+    // Reset temporary highlights
+    if (!fastMode) {
+        document.querySelectorAll('.border-amber-400').forEach(el => {
+            el.classList.remove('bg-amber-500', 'border-amber-400', 'text-white');
+            el.classList.add('border-slate-700', 'text-slate-300');
+        });
+        document.querySelectorAll('.cell-current').forEach(el => el.classList.remove('cell-current'));
+    }
+
+    const cellId = `cell-${step.i}-${step.j}`;
+    const cellEl = document.getElementById(cellId);
+    
+    const charI = document.getElementById(`char-${step.i}`);
+    const charJ = document.getElementById(`char-${step.j}`);
+
+    switch (step.type) {
+        case STEP_TYPE.INIT:
+            // Just a structural step for code highlighting
+            break;
+
+        case STEP_TYPE.COMPARE:
+            if (charI) {
+                charI.classList.add('bg-amber-500', 'border-amber-400', 'text-white');
+                charI.classList.remove('border-slate-700', 'text-slate-300');
+            }
+            if (charJ) {
+                charJ.classList.add('bg-amber-500', 'border-amber-400', 'text-white');
+                charJ.classList.remove('border-slate-700', 'text-slate-300');
+            }
+            if (cellEl) cellEl.classList.add('cell-current');
+            
+            // Show dependency check
+            if (step.i + 1 <= step.j - 1) {
+                const innerId = `cell-${step.i+1}-${step.j-1}`;
+                const innerEl = document.getElementById(innerId);
+                if (innerEl && !fastMode) {
+                     innerEl.classList.add('ring-2', 'ring-blue-400');
+                     setTimeout(() => innerEl?.classList.remove('ring-2', 'ring-blue-400'), state.speed * 0.8);
+                }
+            }
+            break;
+
+        case STEP_TYPE.SET_VAL:
+            if (cellEl) {
+                cellEl.classList.remove('cell-current', 'bg-slate-800/50', 'text-slate-500');
+                if (step.val) {
+                    cellEl.classList.add('cell-true');
+                    cellEl.innerHTML = '<i class="fas fa-check"></i>';
+                } else {
+                    cellEl.classList.add('cell-false');
+                    cellEl.innerHTML = '<i class="fas fa-times"></i>';
+                }
+            }
+            break;
+
+        case STEP_TYPE.UPDATE_MAX:
+            els.longestDisplay.textContent = state.str.substring(step.start, step.start + step.len);
+            els.lengthDisplay.textContent = step.len;
+            if(!fastMode) {
+                els.longestDisplay.parentElement.classList.add('bg-indigo-900/50');
+                setTimeout(() => els.longestDisplay.parentElement.classList.remove('bg-indigo-900/50'), 300);
+            }
+            // Highlight result
+            for(let k=step.start; k < step.start+step.len; k++) {
+                const c = document.getElementById(`char-${k}`);
+                if (c) {
+                    c.classList.add('bg-indigo-600', 'text-white', 'border-indigo-400');
+                    c.classList.remove('bg-amber-500', 'border-slate-700', 'text-slate-300');
+                }
+            }
+            break;
+            
+        case STEP_TYPE.FINISH:
+            els.instruction.classList.add('text-green-400');
+            break;
+    }
+}
+
+// Start
+init();
+
+</script>
+</body>
+</html>
