@@ -1,1 +1,154 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlgoVisualizer - Interactive Learning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
+        .hero-pattern {
+            background-image: radial-gradient(rgba(99, 102, 241, 0.1) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="border-b border-slate-800 bg-slate-950/80 backdrop-blur fixed w-full z-50">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 w-8 h-8 rounded flex items-center justify-center">
+                    <i class="fas fa-cube text-white"></i>
+                </div>
+                <span class="font-bold text-xl tracking-tight">AlgoVisualizer</span>
+            </div>
+            <div class="flex gap-4 text-sm font-medium text-slate-400">
+                <a href="#problems" class="hover:text-white transition-colors">Algorithms</a>
+                <a href="#" class="hover:text-white transition-colors">About</a>
+                <a href="https://github.com" target="_blank" class="hover:text-white transition-colors"><i class="fab fa-github"></i></a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="pt-32 pb-20 px-6 hero-pattern relative border-b border-slate-800">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 mb-6">
+                Visualize. Understand. Master.
+            </h1>
+            <p class="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed mb-10">
+                Interactive step-by-step visualizations for complex algorithms. Dive into recursion, dynamic programming, and more with real-time state tracking.
+            </p>
+            <div class="flex justify-center gap-4">
+                <a href="#problems" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-semibold transition-all shadow-lg shadow-indigo-500/20">
+                    Explore Algorithms
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Problem Grid -->
+    <main id="problems" class="max-w-7xl mx-auto px-6 py-16">
+        <div class="flex items-center gap-4 mb-8">
+            <h2 class="text-2xl font-bold text-white">Featured Problems</h2>
+            <span class="h-px flex-1 bg-slate-800"></span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- Card 1: String Permutations -->
+            <a href="stringper.html" class="block group">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 transition-all duration-300 card-hover hover:border-indigo-500/50 h-full flex flex-col">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-indigo-500/10 rounded-lg text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                            <i class="fas fa-project-diagram text-xl"></i>
+                        </div>
+                        <span class="px-2 py-1 bg-slate-800 text-slate-400 text-xs font-mono rounded border border-slate-700">Backtracking</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-100 mb-2 group-hover:text-indigo-400 transition-colors">String Permutations</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4 flex-1">
+                        Visualize generating all permutations of a string using a recursion tree. Includes optimizations for unique characters and in-place swapping.
+                    </p>
+                    <div class="flex items-center text-sm font-medium text-indigo-400 group-hover:translate-x-2 transition-transform">
+                        Launch Visualizer <i class="fas fa-arrow-right ml-2"></i>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Card 2: Palindromic Substring -->
+            <a href="palindrome.html" class="block group">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 transition-all duration-300 card-hover hover:border-emerald-500/50 h-full flex flex-col">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-emerald-500/10 rounded-lg text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                            <i class="fas fa-code-branch text-xl"></i>
+                        </div>
+                        <span class="px-2 py-1 bg-slate-800 text-slate-400 text-xs font-mono rounded border border-slate-700">Dynamic Programming</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-100 mb-2 group-hover:text-emerald-400 transition-colors">Longest Palindrome</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4 flex-1">
+                        Step through the O(n²) DP table construction to find the longest palindromic substring. Visualize the expansion and table filling.
+                    </p>
+                    <div class="flex items-center text-sm font-medium text-emerald-400 group-hover:translate-x-2 transition-transform">
+                        Launch Visualizer <i class="fas fa-arrow-right ml-2"></i>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Card 3: N-Queens (Placeholder) -->
+            <div class="block group opacity-75">
+                <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-6 h-full flex flex-col relative overflow-hidden">
+                    <div class="absolute top-3 right-3 bg-slate-800 text-xs font-bold px-2 py-1 rounded text-slate-500 uppercase">Coming Soon</div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-slate-800 rounded-lg text-slate-500">
+                            <i class="fas fa-chess-queen text-xl"></i>
+                        </div>
+                        <span class="px-2 py-1 bg-slate-800 text-slate-500 text-xs font-mono rounded border border-slate-700">Backtracking</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-500 mb-2">N-Queens Solver</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed mb-4 flex-1">
+                        Watch how the algorithm places queens on a chessboard such that no two queens threaten each other.
+                    </p>
+                    <div class="flex items-center text-sm font-medium text-slate-600 cursor-not-allowed">
+                        In Development
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4: Sorting (Placeholder) -->
+            <div class="block group opacity-75">
+                <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-6 h-full flex flex-col relative overflow-hidden">
+                    <div class="absolute top-3 right-3 bg-slate-800 text-xs font-bold px-2 py-1 rounded text-slate-500 uppercase">Coming Soon</div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-slate-800 rounded-lg text-slate-500">
+                            <i class="fas fa-sort-amount-down text-xl"></i>
+                        </div>
+                        <span class="px-2 py-1 bg-slate-800 text-slate-500 text-xs font-mono rounded border border-slate-700">Sorting</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-500 mb-2">Merge Sort</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed mb-4 flex-1">
+                        Visualizing the divide and conquer strategy of Merge Sort with animated array splitting and merging.
+                    </p>
+                    <div class="flex items-center text-sm font-medium text-slate-600 cursor-not-allowed">
+                        In Development
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-950 py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-6 text-center text-slate-500 text-sm">
+            <p>&copy; 2024 AlgoVisualizer. Built for educational purposes.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
