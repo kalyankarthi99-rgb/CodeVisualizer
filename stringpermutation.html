@@ -13,27 +13,16 @@
             font-family: 'Inter', sans-serif;
             background-color: #0f172a;
             color: #e2e8f0;
+            overflow: hidden; /* Prevent body scroll, handle inside panels */
         }
 
-        .font-mono {
-            font-family: 'Fira Code', monospace;
-        }
+        .font-mono { font-family: 'Fira Code', monospace; }
 
         /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1e293b; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #475569; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #64748b; 
-        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
         /* Tree Visual Elements */
         .node-circle {
@@ -43,7 +32,7 @@
         }
 
         .node-active {
-            background-color: #f59e0b !important; /* Amber 500 */
+            background-color: #f59e0b !important;
             border-color: #d97706 !important;
             color: white !important;
             box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
@@ -52,13 +41,13 @@
         }
 
         .node-visited {
-            background-color: #1e293b; /* Slate 800 */
+            background-color: #1e293b;
             border-color: #475569;
             color: #94a3b8;
         }
 
         .node-leaf {
-            border-color: #10b981 !important; /* Emerald 500 */
+            border-color: #10b981 !important;
             color: #10b981 !important;
             background-color: rgba(16, 185, 129, 0.1) !important;
         }
@@ -70,242 +59,374 @@
             animation: drawLine 0.5s forwards;
         }
 
-        @keyframes popIn {
-            from { transform: scale(0); }
-            to { transform: scale(1); }
-        }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        @keyframes drawLine { to { stroke-dashoffset: 0; } }
 
-        @keyframes drawLine {
-            to { stroke-dashoffset: 0; }
-        }
+        .char-used { opacity: 0.3; transform: scale(0.9); }
+        .code-active { background-color: #312e81; border-left: 2px solid #818cf8; opacity: 1; font-weight: 500; color: #e0e7ff; }
+        .tab-active { border-bottom: 2px solid #6366f1; color: #6366f1; }
 
-        /* Input styling */
-        input:focus {
-            outline: none;
-            box-shadow: 0 0 0 2px #3b82f6;
-        }
-
-        /* Code Highlighting */
-        .code-line {
-            padding: 2px 8px;
-            border-left: 2px solid transparent;
-            opacity: 0.7;
-            transition: all 0.2s;
-        }
-        .code-active {
-            background-color: #312e81; /* Indigo 900 */
-            border-left-color: #818cf8; /* Indigo 400 */
-            opacity: 1;
-            font-weight: 500;
-            color: #e0e7ff;
-        }
-        .tab-active {
-            border-bottom: 2px solid #6366f1;
-            color: #6366f1;
-        }
+        /* Resizer Handles */
+        .resizer-v { width: 4px; cursor: col-resize; background: #1e293b; transition: background 0.2s; z-index: 50; }
+        .resizer-v:hover, .resizer-v.dragging { background: #6366f1; }
         
-        .char-used {
-            opacity: 0.3;
-            transform: scale(0.9);
-        }
+        .resizer-h { height: 4px; cursor: row-resize; background: #1e293b; transition: background 0.2s; z-index: 50; }
+        .resizer-h:hover, .resizer-h.dragging { background: #6366f1; }
+
+        /* Panel Controls */
+        .panel-btn { @apply p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors; }
+        
+        /* Drag Overlay (prevents iframe interference) */
+        .drag-overlay { position: fixed; inset: 0; z-index: 9999; cursor: inherit; display: none; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body class="flex flex-col h-screen">
 
-    <!-- Header -->
-    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center shrink-0">
+    <!-- Navbar -->
+    <header class="bg-slate-900 border-b border-slate-800 h-14 shrink-0 flex items-center justify-between px-4 z-50">
         <div class="flex items-center gap-3">
-            <div class="bg-indigo-600 p-2 rounded-lg">
-                <i class="fas fa-project-diagram text-white text-xl"></i>
-            </div>
-            <div>
-                <h1 class="text-xl font-bold text-white">String Permutations Tree</h1>
-                <p class="text-xs text-slate-400">Backtracking Recursion Tree (O(n!))</p>
-            </div>
+            <a href="index.html" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="font-bold text-white text-sm md:text-base flex items-center gap-2">
+                <i class="fas fa-project-diagram text-indigo-500"></i>
+                String Permutations
+            </h1>
         </div>
-        <div class="flex gap-4 text-sm">
-             <button onclick="switchTab('desc')" class="text-slate-400 hover:text-white transition-colors"><i class="fas fa-book mr-1"></i> Problem</button>
-             <button onclick="switchTab('code')" class="text-slate-400 hover:text-white transition-colors"><i class="fas fa-code mr-1"></i> Code</button>
+        <div class="flex gap-2">
+            <button onclick="layoutReset()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded border border-slate-700 transition-colors">
+                <i class="fas fa-columns mr-1"></i> Reset Layout
+            </button>
         </div>
     </header>
 
-    <!-- Main Layout -->
-    <main class="flex-1 flex overflow-hidden">
+    <!-- Main Layout Container -->
+    <!-- On Mobile: Flex-col (Stacked). On Desktop: Flex-row (Side-by-side). -->
+    <div id="layout-container" class="flex flex-col md:flex-row flex-1 overflow-hidden relative">
         
-        <!-- Left Panel: Controls & Input -->
-        <aside class="w-80 bg-slate-900 border-r border-slate-800 p-6 flex flex-col gap-6 overflow-y-auto shrink-0 z-20 shadow-xl">
+        <div class="drag-overlay" id="dragOverlay"></div>
+
+        <!-- LEFT PANEL: Controls (Sidebar) -->
+        <aside id="panel-sidebar" class="bg-slate-900 flex flex-col border-b md:border-b-0 md:border-r border-slate-800 min-w-[250px] md:w-80 shrink-0 relative transition-all duration-200" style="height: auto;">
             
-            <!-- Input Section -->
-            <div class="space-y-2">
-                <label class="text-sm font-medium text-slate-300">Input String</label>
-                <div class="flex gap-2">
-                    <input type="text" id="inputString" value="ABC" maxlength="5" 
-                        class="w-full bg-slate-800 border border-slate-700 text-white px-3 py-2 rounded-md font-mono tracking-widest uppercase focus:border-indigo-500 placeholder-slate-600 transition-colors"
-                        placeholder="Max 5 chars">
-                    <button id="btnReset" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition-colors">
-                        Set
+            <!-- Panel Header -->
+            <div class="h-10 bg-slate-950/50 border-b border-slate-800 flex items-center justify-between px-3 shrink-0">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Configuration</span>
+                <div class="flex gap-1">
+                    <button class="panel-btn md:hidden" onclick="togglePanel('panel-sidebar')" title="Minimize">
+                        <i class="fas fa-chevron-up"></i>
                     </button>
                 </div>
-                
-                <!-- Algorithm Selection -->
-                <div class="pt-2">
-                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Algorithm</label>
-                    <div class="relative">
-                        <select id="algoSelect" class="w-full bg-slate-800 border border-slate-700 text-white px-3 py-2 rounded-md text-sm focus:border-indigo-500 appearance-none cursor-pointer transition-colors">
-                            <option value="BASIC">Solution 1: Basic Backtracking</option>
-                            <option value="SWAP">Solution 2: In-Place Swapping</option>
-                            <option value="UNIQUE">Solution 3: Unique (Pruning)</option>
-                        </select>
-                        <div class="absolute right-3 top-2.5 text-slate-400 pointer-events-none text-xs">
-                            <i class="fas fa-chevron-down"></i>
+            </div>
+
+            <!-- Panel Content -->
+            <div id="sidebar-content" class="flex-1 overflow-y-auto p-4 space-y-6">
+                 <!-- Input & Algorithm -->
+                 <div class="space-y-3">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-medium text-slate-300">Input String</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="inputString" value="ABC" maxlength="5" 
+                                class="w-full bg-slate-800 border border-slate-700 text-white px-3 py-2 rounded-md font-mono tracking-widest uppercase focus:border-indigo-500 placeholder-slate-600 transition-colors text-sm"
+                                placeholder="Max 5 chars">
+                            <button id="btnReset" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-md transition-colors text-sm font-medium">
+                                Set
+                            </button>
+                        </div>
+                        
+                        <div class="relative">
+                            <select id="algoSelect" class="w-full bg-slate-800 border border-slate-700 text-white px-3 py-2 rounded-md text-sm focus:border-indigo-500 appearance-none cursor-pointer transition-colors">
+                                <option value="BASIC">Solution 1: Basic Backtracking</option>
+                                <option value="SWAP">Solution 2: In-Place Swapping</option>
+                                <option value="UNIQUE">Solution 3: Unique (Pruning)</option>
+                            </select>
+                            <div class="absolute right-3 top-2.5 text-slate-400 pointer-events-none text-xs">
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <p class="text-xs text-slate-500">Rec. Max length: 4 (Tree gets wide)</p>
-            </div>
-
-            <!-- Playback Controls -->
-            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-4">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Playback</span>
-                </div>
-                
-                <div class="flex justify-center gap-3">
-                    <button id="btnPrev" class="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fas fa-step-backward"></i>
-                    </button>
-                    <button id="btnPlay" class="w-12 h-12 rounded-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105">
-                        <i class="fas fa-play pl-1"></i>
-                    </button>
-                    <button id="btnNext" class="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fas fa-step-forward"></i>
-                    </button>
-                </div>
-
-                <div class="space-y-1">
-                    <div class="flex justify-between text-xs text-slate-400">
-                        <span>Speed</span>
-                        <span id="speedLabel">1x</span>
+                <!-- Playback -->
+                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Controls</span>
+                        <span id="speedLabel" class="text-xs text-slate-400 font-mono">1.0x</span>
+                    </div>
+                    <div class="flex items-center gap-2 justify-center">
+                        <button id="btnPrev" class="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-white transition-all disabled:opacity-50">
+                            <i class="fas fa-step-backward text-xs"></i>
+                        </button>
+                        <button id="btnPlay" class="w-10 h-10 rounded-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center text-white shadow-lg transition-all hover:scale-105">
+                            <i class="fas fa-play pl-1 text-sm"></i>
+                        </button>
+                        <button id="btnNext" class="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-white transition-all disabled:opacity-50">
+                            <i class="fas fa-step-forward text-xs"></i>
+                        </button>
                     </div>
                     <input type="range" id="speedRange" min="1" max="50" value="10" class="w-full h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-indigo-500">
                 </div>
-            </div>
 
-            <!-- Legend -->
-            <div class="space-y-3">
-                <h3 class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Legend</h3>
-                <div class="grid grid-cols-1 gap-2 text-sm">
-                    <div class="flex items-center gap-2">
-                        <div class="w-4 h-4 rounded-full bg-amber-500 border border-amber-600"></div>
-                        <span class="text-slate-300">Active Node (Current)</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-4 h-4 rounded-full border border-emerald-500 bg-emerald-500/20"></div>
-                        <span class="text-slate-300">Leaf Node (Solution)</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-4 h-4 rounded-full bg-slate-800 border border-slate-600"></div>
-                        <span class="text-slate-300">Visited/Backtracked</span>
+                <!-- Stats -->
+                <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                    <div class="text-xs text-slate-400 mb-1">Permutations Found</div>
+                    <div class="flex justify-between items-end">
+                        <div id="countDisplay" class="text-xl font-mono font-bold text-indigo-400 leading-none">0</div>
+                        <div class="text-xs text-slate-500">of <span id="totalExpected" class="text-slate-300">-</span> expected</div>
                     </div>
                 </div>
             </div>
-
-            <!-- Stats -->
-            <div class="mt-auto bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-                <div class="text-xs text-slate-400 mb-1">Found Permutations</div>
-                <div id="countDisplay" class="text-lg font-mono font-bold text-indigo-400 truncate">
-                    0
-                </div>
-                <div class="flex justify-between mt-2 text-xs text-slate-500">
-                    <span>Total Expected: <span id="totalExpected" class="text-slate-300">-</span></span>
-                </div>
-            </div>
-
         </aside>
 
-        <!-- Right Section: Visualization + Tabs -->
-        <section class="flex-1 flex flex-col bg-slate-950 relative overflow-hidden">
+        <!-- Resizer Handle (Vertical) - Desktop Only -->
+        <div id="resizer-v" class="resizer-v hidden md:block" onmousedown="initDrag(event, 'h')"></div>
+
+        <!-- RIGHT PANEL: Main Content -->
+        <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
             
-            <!-- Source Available Panel (Sticky Top) -->
-            <div class="bg-slate-900/80 border-b border-slate-800 p-3 shadow-md z-20 flex items-center justify-between backdrop-blur-sm">
-                 <div class="flex items-center gap-4">
-                     <span id="sourceLabel" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Available Chars:</span>
-                     <div class="flex gap-2" id="sourceContainer">
-                         <!-- Source Chars -->
-                     </div>
-                 </div>
-                 <div class="text-sm text-slate-400 font-medium" id="instructionText">
-                    Ready to start.
-                 </div>
-            </div>
-
-            <!-- Tree Canvas Area (Middle) -->
-            <div class="flex-1 overflow-auto bg-slate-950 relative cursor-move" id="treeScrollArea">
-                <div id="treeContainer" class="absolute top-0 left-0 min-w-full min-h-full origin-top-left transition-transform duration-200">
-                    <!-- SVG Lines Layer -->
-                    <svg id="treeLines" class="absolute top-0 left-0 w-full h-full pointer-events-none z-0 overflow-visible"></svg>
-                    <!-- Nodes Layer -->
-                    <div id="treeNodes" class="absolute top-0 left-0 w-full h-full z-10"></div>
-                </div>
-            </div>
-
-            <!-- Bottom Tabs Area -->
-            <div class="h-1/3 bg-slate-900 flex flex-col min-h-0 border-t border-slate-800 z-30">
-                <!-- Tab Headers -->
-                <div class="flex border-b border-slate-800 shrink-0">
-                    <button id="tab-code" class="px-6 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors tab-active" onclick="switchTab('code')">
-                        Code Trace
-                    </button>
-                    <button id="tab-desc" class="px-6 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors" onclick="switchTab('desc')">
-                        Problem Description
-                    </button>
-                </div>
-
-                <!-- Tab Content: Code -->
-                <div id="content-code" class="flex-1 flex overflow-hidden">
-                    <div class="w-1/2 overflow-auto p-4 border-r border-slate-800 bg-slate-950">
-                        <pre class="font-mono text-xs md:text-sm text-slate-400 leading-6" id="codeDisplay"></pre>
-                    </div>
-                    <div class="w-1/2 p-6 overflow-auto bg-slate-900">
-                        <h4 class="text-indigo-400 font-bold mb-2 text-sm uppercase tracking-wider">Logic State</h4>
-                        <div id="stepExplanation" class="text-slate-300 text-sm leading-relaxed mb-4">
-                            Press play to see execution.
+            <!-- TOP SECTION: Visualizer -->
+            <div id="panel-viz" class="flex-1 flex flex-col bg-slate-950 relative min-h-[200px] transition-all duration-200">
+                
+                <!-- Header -->
+                <div class="h-10 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between px-3 shrink-0 backdrop-blur-sm z-20">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Visualizer</span>
+                        <div class="h-4 w-px bg-slate-700 mx-1"></div>
+                        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                            <span id="sourceLabel" class="text-[10px] font-bold text-slate-500 uppercase whitespace-nowrap">Available:</span>
+                            <div class="flex gap-1" id="sourceContainer"></div>
                         </div>
-                        <div class="border-t border-slate-800 pt-4">
-                             <h4 class="text-slate-500 font-bold mb-2 text-xs uppercase tracking-wider">Recursion Stack</h4>
-                             <div class="font-mono text-xs text-slate-400 space-y-1" id="varDisplay">
-                                 <div>depth: 0</div>
-                                 <div>path: ""</div>
+                    </div>
+                    <div class="flex gap-1 ml-2">
+                        <button class="panel-btn" onclick="toggleMaximize('panel-viz')" title="Maximize">
+                            <i class="fas fa-expand text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canvas -->
+                <div class="flex-1 overflow-auto bg-slate-950 relative cursor-move touch-auto" id="treeScrollArea">
+                     <div class="absolute top-2 right-2 z-30 opacity-0 transition-opacity hover:opacity-100 pointer-events-none md:pointer-events-auto">
+                        <div class="bg-slate-800 text-[10px] text-slate-400 px-2 py-1 rounded border border-slate-700">
+                            Drag to pan • Scroll to zoom
+                        </div>
+                    </div>
+                    <div id="treeContainer" class="absolute top-0 left-0 min-w-full min-h-full origin-top-left transition-transform duration-200">
+                        <svg id="treeLines" class="absolute top-0 left-0 w-full h-full pointer-events-none z-0 overflow-visible"></svg>
+                        <div id="treeNodes" class="absolute top-0 left-0 w-full h-full z-10"></div>
+                    </div>
+                    <div id="instructionOverlay" class="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
+                        <span id="instructionText" class="bg-slate-900/90 text-slate-200 px-4 py-2 rounded-full text-sm font-medium border border-slate-700 shadow-xl backdrop-blur-sm">
+                            Ready to start.
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resizer Handle (Horizontal) - Desktop Only -->
+            <div id="resizer-h" class="resizer-h hidden md:block" onmousedown="initDrag(event, 'v')"></div>
+
+            <!-- BOTTOM SECTION: Code & Details -->
+            <div id="panel-code" class="h-1/3 min-h-[40px] bg-slate-900 flex flex-col border-t border-slate-800 relative transition-all duration-200">
+                
+                <!-- Header -->
+                <div class="h-10 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-3 shrink-0">
+                    <div class="flex gap-4">
+                        <button id="tab-code" class="text-xs font-semibold text-white border-b-2 border-indigo-500 h-10 px-1 transition-colors" onclick="switchTab('code')">Code Trace</button>
+                        <button id="tab-desc" class="text-xs font-semibold text-slate-400 hover:text-white border-b-2 border-transparent h-10 px-1 transition-colors" onclick="switchTab('desc')">Description</button>
+                        <button id="tab-sol" class="text-xs font-semibold text-slate-400 hover:text-white border-b-2 border-transparent h-10 px-1 transition-colors" onclick="switchTab('sol')">Solution</button>
+                    </div>
+                    <div class="flex gap-1">
+                        <button class="panel-btn" onclick="toggleMaximize('panel-code')" title="Maximize">
+                            <i class="fas fa-expand text-xs"></i>
+                        </button>
+                        <button class="panel-btn" onclick="toggleMinimize('panel-code')" title="Minimize">
+                            <i class="fas fa-minus text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Content -->
+                <div id="code-content-wrapper" class="flex-1 overflow-hidden relative">
+                    <!-- Tab: Code -->
+                    <div id="content-code" class="absolute inset-0 flex flex-col md:flex-row">
+                        <div class="w-full md:w-1/2 overflow-auto p-4 bg-slate-950 border-b md:border-b-0 md:border-r border-slate-800">
+                            <pre class="font-mono text-xs text-slate-400 leading-relaxed whitespace-pre" id="codeDisplay"></pre>
+                        </div>
+                        <div class="w-full md:w-1/2 p-4 bg-slate-900 overflow-y-auto">
+                            <h4 class="text-indigo-400 font-bold text-xs uppercase tracking-wider mb-2">Step Explanation</h4>
+                            <div id="stepExplanation" class="text-slate-300 text-sm leading-relaxed mb-4"></div>
+                            
+                            <div class="border-t border-slate-800 pt-3">
+                                <h4 class="text-slate-500 font-bold text-xs uppercase tracking-wider mb-2">Recursion Stack</h4>
+                                <div class="font-mono text-xs text-slate-400 space-y-1" id="varDisplay">
+                                    <div>depth: 0</div>
+                                    <div>path: ""</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Desc -->
+                    <div id="content-desc" class="absolute inset-0 overflow-auto p-6 hidden bg-slate-900">
+                        <div class="max-w-3xl mx-auto space-y-4 text-slate-300 text-sm">
+                            <h2 class="text-lg font-bold text-white">Algorithm Details</h2>
+                            <p id="algo-desc-text">Select an algorithm to see details.</p>
+                            <h3 class="font-bold text-white mt-4">Recursion Tree Concept</h3>
+                            <ul class="list-disc pl-5 space-y-1">
+                                <li><strong>Root:</strong> Start state (empty string).</li>
+                                <li><strong>Edges:</strong> Decisions (picking a character).</li>
+                                <li><strong>Leaves:</strong> Solutions (complete permutations).</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Solution -->
+                    <div id="content-sol" class="absolute inset-0 overflow-auto p-6 hidden bg-slate-900">
+                        <div class="max-w-3xl mx-auto space-y-6 text-slate-300 text-sm">
+                             <div>
+                                <h2 class="text-lg font-bold text-white mb-2" id="sol-title">Approach</h2>
+                                <div id="sol-strategy" class="leading-relaxed text-slate-300"></div>
+                             </div>
+                             
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                                    <div class="text-xs font-bold text-slate-500 uppercase mb-1">Time Complexity</div>
+                                    <div id="sol-time" class="text-indigo-400 font-mono text-base"></div>
+                                </div>
+                                <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                                    <div class="text-xs font-bold text-slate-500 uppercase mb-1">Space Complexity</div>
+                                    <div id="sol-space" class="text-emerald-400 font-mono text-base"></div>
+                                </div>
+                             </div>
+
+                             <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
+                                 <div class="text-xs font-bold text-slate-500 uppercase mb-2">Key Intuition</div>
+                                 <p id="sol-intuition" class="text-slate-400 italic"></p>
                              </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Tab Content: Description -->
-                <div id="content-desc" class="flex-1 overflow-auto p-8 hidden">
-                    <div class="max-w-3xl mx-auto space-y-6 text-slate-300">
-                        <div>
-                            <h2 class="text-xl font-bold text-white mb-2">Recursion Tree</h2>
-                            <p>Visualizing the permutation generation as a tree structure makes the backtracking process intuitive.</p>
-                        </div>
-                        <ul class="list-disc pl-5 space-y-2">
-                            <li><strong>Root Node:</strong> Represents the empty string (start state).</li>
-                            <li><strong>Edges:</strong> Represent choosing a character from the available set.</li>
-                            <li><strong>Leaf Nodes:</strong> Represent complete permutations (base cases).</li>
-                            <li><strong>Backtracking:</strong> Moving up the tree (returning from a child to a parent) restores the available characters.</li>
-                        </ul>
-                    </div>
-                </div>
-
             </div>
-
-        </section>
-    </main>
+        </div>
+    </div>
 
 <script>
 /**
- * Application State
+ * Layout & Resizing Logic
+ */
+let isDragging = false;
+let currentResizer = null;
+const container = document.getElementById('layout-container');
+const sidebar = document.getElementById('panel-sidebar');
+const vizPanel = document.getElementById('panel-viz');
+const codePanel = document.getElementById('panel-code');
+const dragOverlay = document.getElementById('dragOverlay');
+
+function initDrag(e, dir) {
+    if(window.innerWidth < 768) return; // Disable on mobile
+    isDragging = true;
+    currentResizer = dir;
+    dragOverlay.style.display = 'block';
+    
+    if (dir === 'h') { // Horizontal drag (adjusting sidebar width)
+        document.body.style.cursor = 'col-resize';
+    } else { // Vertical drag (adjusting top/bottom height)
+        document.body.style.cursor = 'row-resize';
+    }
+}
+
+document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+
+    if (currentResizer === 'h') {
+        // Adjust Sidebar Width
+        // Limit between 200px and 50% screen width
+        const newWidth = Math.max(200, Math.min(e.clientX, window.innerWidth * 0.5));
+        sidebar.style.width = `${newWidth}px`;
+        sidebar.style.flex = 'none'; // Disable flex grow/shrink
+    } else {
+        // Adjust Viz/Code Height split
+        // Calculate Code Panel height from bottom
+        const containerRect = container.getBoundingClientRect();
+        const totalHeight = containerRect.height;
+        const relativeY = e.clientY - containerRect.top;
+        const newCodeHeight = totalHeight - relativeY;
+        
+        // Limit code panel height (min 40px for header, max 80%)
+        const clampedHeight = Math.max(40, Math.min(newCodeHeight, totalHeight * 0.8));
+        const clampedVizHeight = totalHeight - clampedHeight;
+
+        if (clampedVizHeight > 100) { // Ensure viz has minimal space
+            codePanel.style.height = `${clampedHeight}px`;
+            // panel-viz is flex-1, it will adapt automatically if we fix codePanel height
+        }
+    }
+});
+
+document.addEventListener('mouseup', () => {
+    if (isDragging) {
+        isDragging = false;
+        currentResizer = null;
+        document.body.style.cursor = '';
+        dragOverlay.style.display = 'none';
+        // Trigger resize event for canvas redraws if needed
+        window.dispatchEvent(new Event('resize'));
+    }
+});
+
+function toggleMaximize(panelId) {
+    const panel = document.getElementById(panelId);
+    
+    // Toggle Maximize State via classes
+    if (panelId === 'panel-viz') {
+        // Maximize Viz -> Collapse Code
+        if (codePanel.style.height === '40px') {
+             // Restore
+             codePanel.style.height = '33%';
+        } else {
+             // Maximize
+             codePanel.style.height = '40px'; // Header only
+        }
+    } else if (panelId === 'panel-code') {
+        // Maximize Code -> Expand Code Height
+        if (codePanel.style.height === '80%') {
+            codePanel.style.height = '33%';
+        } else {
+            codePanel.style.height = '80%';
+        }
+    }
+}
+
+function toggleMinimize(panelId) {
+    if (panelId === 'panel-code') {
+        // Minimize to header
+        codePanel.style.height = '40px';
+    }
+}
+
+function layoutReset() {
+    if (window.innerWidth >= 768) {
+        sidebar.style.width = '20rem'; // w-80
+        codePanel.style.height = '33%';
+    } else {
+        sidebar.style.height = 'auto';
+        codePanel.style.height = 'auto';
+    }
+}
+
+function togglePanel(id) {
+    // Basic mobile accordion toggle
+    const content = document.getElementById('sidebar-content');
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+    } else {
+        content.style.display = 'none';
+    }
+}
+
+/**
+ * Application State & Algorithm Logic
  */
 const state = {
     str: '',
@@ -316,21 +437,21 @@ const state = {
     timer: null,
     treeLayout: {}, 
     results: [],
-    algo: 'BASIC' // Added algo state
+    algo: 'BASIC'
 };
 
-// DOM Elements
+// Full definition of DOM Elements to prevent "undefined" errors
 const els = {
     input: document.getElementById('inputString'),
     algoSelect: document.getElementById('algoSelect'),
     sourceLabel: document.getElementById('sourceLabel'),
+    sourceContainer: document.getElementById('sourceContainer'),
     btnReset: document.getElementById('btnReset'),
     btnPrev: document.getElementById('btnPrev'),
     btnNext: document.getElementById('btnNext'),
     btnPlay: document.getElementById('btnPlay'),
     speedRange: document.getElementById('speedRange'),
     speedLabel: document.getElementById('speedLabel'),
-    sourceContainer: document.getElementById('sourceContainer'),
     treeScrollArea: document.getElementById('treeScrollArea'),
     treeContainer: document.getElementById('treeContainer'),
     treeNodes: document.getElementById('treeNodes'),
@@ -341,20 +462,35 @@ const els = {
     codeDisplay: document.getElementById('codeDisplay'),
     stepExplanation: document.getElementById('stepExplanation'),
     varDisplay: document.getElementById('varDisplay'),
+    algoDescText: document.getElementById('algo-desc-text'),
+    // Tabs & Contents
     tabs: {
         code: document.getElementById('tab-code'),
-        desc: document.getElementById('tab-desc')
+        desc: document.getElementById('tab-desc'),
+        sol: document.getElementById('tab-sol')
     },
     contents: {
         code: document.getElementById('content-code'),
-        desc: document.getElementById('content-desc')
-    }
+        desc: document.getElementById('content-desc'),
+        sol: document.getElementById('content-sol')
+    },
+    // Solution Elements
+    solTitle: document.getElementById('sol-title'),
+    solStrategy: document.getElementById('sol-strategy'),
+    solTime: document.getElementById('sol-time'),
+    solSpace: document.getElementById('sol-space'),
+    solIntuition: document.getElementById('sol-intuition')
 };
 
-// Algorithm Source Codes
 const ALGOS = {
     BASIC: {
-        desc: "Standard backtracking using a 'used' array to build permutations.",
+        desc: "Standard backtracking using a 'used' array. Builds one character at a time.",
+        complexity: {
+            time: "O(N * N!)",
+            space: "O(N)"
+        },
+        strategy: "We use a boolean array `used` to keep track of characters that have already been included in the current partial permutation. At each step of the recursion, we iterate through all characters, picking an unused one, recursing, and then backtracking (marking it unused again).",
+        intuition: "Think of it as filling N empty slots. For the first slot, we have N choices. For the second, N-1 choices, and so on.",
         code: [
             { text: "public void permute(String s) {", indent: 0 },
             { text: "boolean[] used = new boolean[s.length()];", indent: 1 },
@@ -374,34 +510,45 @@ const ALGOS = {
         ]
     },
     SWAP: {
-        desc: "Optimized for space by swapping characters in-place instead of creating new strings.",
+        desc: "Space-optimized approach swapping characters in-place.",
+        complexity: {
+            time: "O(N * N!)",
+            space: "O(N)"
+        },
+        strategy: "Instead of building a new string at every step, we maintain a single character array. We divide the array into two parts: `[0...start-1]` (fixed) and `[start...n-1]` (to be permuted). We swap the character at `start` with every character from `start` to `end`, recurse for `start+1`, and then swap back to restore order.",
+        intuition: "Swapping allows us to generate permutations without extra memory for 'used' arrays or intermediate strings.",
         code: [
             { text: "public void permute(char[] arr, int start) {", indent: 0 },
             { text: "if (start == arr.length) {", indent: 1 },
-            { text: "results.add(new String(arr)); return;", indent: 2 },
+            { text: "res.add(new String(arr)); return;", indent: 2 },
             { text: "}", indent: 1 },
             { text: "for (int i = start; i < arr.length; i++) {", indent: 1 },
             { text: "swap(arr, start, i);", indent: 2 },
             { text: "permute(arr, start + 1);", indent: 2 },
             { text: "swap(arr, start, i); // Backtrack", indent: 2 },
             { text: "}", indent: 1 },
-            { text: "}", indent: 0 },
-            { text: "void swap(char[] arr, int i, int j) { ... }", indent: 0 }
+            { text: "}", indent: 0 }
         ]
     },
     UNIQUE: {
-        desc: "Sorts input first and skips duplicates to avoid generating redundant permutations.",
+        desc: "Handles duplicates by sorting first and skipping identical adjacent characters.",
+        complexity: {
+            time: "O(N * N!)",
+            space: "O(N)"
+        },
+        strategy: "First, sort the input string to group duplicates. During recursion, if a character is the same as the previous one (`arr[i] == arr[i-1]`) AND the previous one was not used in the current level (`!used[i-1]`), we skip it. This ensures we don't start a new permutation branch with the same character at the same position twice.",
+        intuition: "If you have two 'A's, treating them as distinct would generate duplicates. Sorting helps us detect and skip these redundant branches immediately.",
         code: [
             { text: "public void permuteUnique(char[] arr) {", indent: 0 },
             { text: "Arrays.sort(arr);", indent: 1 },
-            { text: "boolean[] used = new boolean[arr.length];", indent: 1 },
+            { text: "boolean[] used = new boolean[n];", indent: 1 },
             { text: "backtrack(arr, \"\", used);", indent: 1 },
             { text: "}", indent: 0 },
             { text: "void backtrack(char[] arr, String curr, boolean[] used) {", indent: 0 },
-            { text: "if (curr.length() == arr.length) { res.add(curr); return; }", indent: 1 },
-            { text: "for (int i = 0; i < arr.length; i++) {", indent: 1 },
-            { text: "if (used[i] || (i > 0 && arr[i] == arr[i-1] && !used[i-1]))", indent: 2 },
-            { text: "    continue; // Skip Duplicate", indent: 3 },
+            { text: "if (curr.length() == n) { res.add(curr); return; }", indent: 1 },
+            { text: "for (int i = 0; i < n; i++) {", indent: 1 },
+            { text: "if (used[i] || (i>0 && arr[i]==arr[i-1] && !used[i-1]))", indent: 2 },
+            { text: "    continue;", indent: 3 },
             { text: "used[i] = true;", indent: 2 },
             { text: "backtrack(arr, curr + arr[i], used);", indent: 2 },
             { text: "used[i] = false;", indent: 2 },
@@ -411,59 +558,65 @@ const ALGOS = {
     }
 };
 
-// Step Types
 const STEP_TYPE = {
     START: 'START',
     VISIT_NODE: 'VISIT_NODE',
     FOUND_LEAF: 'FOUND_LEAF',
     BACKTRACK_UP: 'BACKTRACK_UP',
-    SWAP: 'SWAP' // Specific to Swap Algo
+    SWAP: 'SWAP'
 };
 
-// Layout Constants
 const NODE_RADIUS = 20;
 const LEVEL_HEIGHT = 80;
 const LEAF_SPACING = 60;
 
+// Initialize
+init();
+
 function init() {
     setupEventListeners();
     resetVisualization(els.input.value);
+    layoutReset(); // Set initial sizes
 }
 
 function renderCode() {
     const algo = ALGOS[state.algo];
+    // 1. Render Code Trace
     els.codeDisplay.innerHTML = algo.code.map((line, idx) => {
         const padding = '  '.repeat(line.indent);
         return `<div id="code-line-${idx}" class="code-line">${padding}${line.text}</div>`;
     }).join('');
-    
-    // Update Description in tab
-    const descPanel = document.querySelector('#content-desc .max-w-3xl');
-    if(descPanel) {
-        // Simple update to intro text
-        const intro = descPanel.querySelector('p');
-        if(intro) intro.textContent = `${algo.desc} (Algorithm: ${state.algo})`;
-    }
+    els.algoDescText.textContent = algo.desc;
+
+    // 2. Render Solution Tab Data
+    els.solTitle.textContent = `${state.algo === 'BASIC' ? 'Basic Backtracking' : state.algo === 'SWAP' ? 'In-Place Swapping' : 'Unique Permutations'}`;
+    els.solStrategy.textContent = algo.strategy;
+    els.solTime.textContent = algo.complexity.time;
+    els.solSpace.textContent = algo.complexity.space;
+    els.solIntuition.textContent = algo.intuition;
 }
 
 function switchTab(tabName) {
-    Object.values(els.tabs).forEach(el => {
-        el.classList.remove('tab-active', 'text-white');
-        el.classList.add('text-slate-400');
+    const tabs = ['code', 'desc', 'sol'];
+    tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const content = document.getElementById(`content-${t}`);
+        if (t === tabName) {
+            btn.classList.add('text-white', 'border-indigo-500');
+            btn.classList.remove('text-slate-400', 'border-transparent');
+            content.classList.remove('hidden');
+        } else {
+            btn.classList.remove('text-white', 'border-indigo-500');
+            btn.classList.add('text-slate-400', 'border-transparent');
+            content.classList.add('hidden');
+        }
     });
-    Object.values(els.contents).forEach(el => el.classList.add('hidden'));
-
-    els.tabs[tabName].classList.add('tab-active', 'text-white');
-    els.tabs[tabName].classList.remove('text-slate-400');
-    els.contents[tabName].classList.remove('hidden');
 }
 
 function setupEventListeners() {
     els.btnReset.addEventListener('click', () => resetVisualization(els.input.value));
-    els.algoSelect.addEventListener('change', () => resetVisualization(els.input.value)); // Algo change listener
-    els.input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') resetVisualization(els.input.value);
-    });
+    els.algoSelect.addEventListener('change', () => resetVisualization(els.input.value));
+    els.input.addEventListener('keypress', (e) => { if (e.key === 'Enter') resetVisualization(els.input.value); });
     
     els.btnNext.addEventListener('click', () => { stopPlayback(); nextStep(); });
     els.btnPrev.addEventListener('click', () => { stopPlayback(); prevStep(); });
@@ -477,18 +630,121 @@ function setupEventListeners() {
     });
 }
 
-function factorial(n) {
-    return n <= 1 ? 1 : n * factorial(n - 1);
+function factorial(n) { return n <= 1 ? 1 : n * factorial(n - 1); }
+
+// --- Algo Logic Same as Before (Refactored for Layout) ---
+function resetVisualization(inputStr) {
+    stopPlayback();
+    state.algo = els.algoSelect.value;
+    renderCode();
+    
+    if (state.algo === 'SWAP') els.sourceLabel.textContent = "Current Array:";
+    else els.sourceLabel.textContent = "Available:";
+
+    let cleanStr = inputStr.replace(/[^a-zA-Z0-9]/g, '').slice(0, 5).toUpperCase();
+    if (!cleanStr) cleanStr = "ABC";
+    if (state.algo === 'UNIQUE') cleanStr = cleanStr.split('').sort().join('');
+
+    els.input.value = cleanStr;
+    state.str = cleanStr;
+    
+    state.treeLayout = calculateTreeLayout(state.str, state.algo);
+    
+    if (state.algo === 'BASIC') state.steps = generateStepsBasic(state.str);
+    else if (state.algo === 'SWAP') state.steps = generateStepsSwap(state.str);
+    else state.steps = generateStepsUnique(state.str);
+    
+    state.currentStepIndex = -1;
+    
+    buildSourceUI(state.str);
+    els.treeNodes.innerHTML = '';
+    els.treeLines.innerHTML = '';
+    
+    els.countDisplay.textContent = "0";
+    
+    let expected = factorial(state.str.length);
+    if (state.algo === 'UNIQUE') {
+        const counts = {};
+        for(let c of state.str) counts[c] = (counts[c] || 0) + 1;
+        for(let k in counts) expected /= factorial(counts[k]);
+    }
+    els.totalExpected.textContent = expected;
+    els.instruction.textContent = "Ready.";
+    els.varDisplay.innerHTML = `<div>depth: 0</div>`;
+    
+    highlightCode(-1);
+    updateControls();
 }
 
-// ---- Layout Logic (Generic) ----
+function generateStepsBasic(s) {
+    const steps = []; const n = s.length;
+    function backtrack(path, used, depth) {
+        steps.push({ type: STEP_TYPE.VISIT_NODE, line: 4, path, used: [...used], depth, msg: depth===0?"Root":`Added '${path.slice(-1)}'` });
+        if (path.length === n) {
+            steps.push({ type: STEP_TYPE.FOUND_LEAF, line: 6, path, used: [...used], depth, msg: `Found: ${path}` });
+            steps.push({ type: STEP_TYPE.BACKTRACK_UP, line: 12, path, used: [...used], depth, msg: "Backtrack" });
+            return;
+        }
+        for (let i = 0; i < n; i++) {
+            if (used[i]) continue;
+            used[i] = true;
+            backtrack(path + s[i], used, depth + 1);
+            used[i] = false;
+        }
+        if(depth>0) steps.push({ type: STEP_TYPE.BACKTRACK_UP, line: 12, path, used: [...used], depth, msg: "Backtracking" });
+    }
+    backtrack("", Array(n).fill(false), 0);
+    return steps;
+}
+
+function generateStepsUnique(s) {
+    const steps = []; const n = s.length;
+    function backtrack(path, used, depth) {
+        steps.push({ type: STEP_TYPE.VISIT_NODE, line: 5, path, used: [...used], depth, msg: `Visit: ${path||"Root"}` });
+        if (path.length === n) {
+            steps.push({ type: STEP_TYPE.FOUND_LEAF, line: 7, path, used: [...used], depth, msg: `Found: ${path}` });
+            return;
+        }
+        for (let i = 0; i < n; i++) {
+            if (used[i]) continue;
+            if (i > 0 && s[i] === s[i-1] && !used[i-1]) continue;
+            used[i] = true;
+            backtrack(path + s[i], used, depth + 1);
+            used[i] = false;
+        }
+        if(depth>0) steps.push({ type: STEP_TYPE.BACKTRACK_UP, line: 14, path, used: [...used], depth, msg: "Backtrack" });
+    }
+    backtrack("", Array(n).fill(false), 0);
+    return steps;
+}
+
+function generateStepsSwap(s) {
+    const steps = []; const arr = s.split(''); const n = s.length;
+    function permute(currArr, start) {
+        const path = currArr.slice(0, start).join('');
+        steps.push({ type: STEP_TYPE.VISIT_NODE, line: 0, path, used: [], depth: start, msg: `Depth ${start}`, arrState: [...currArr] });
+        if (start === n) {
+            steps.push({ type: STEP_TYPE.FOUND_LEAF, line: 2, path, used: [], depth: start, msg: `Found: ${currArr.join('')}`, arrState: [...currArr] });
+            steps.push({ type: STEP_TYPE.BACKTRACK_UP, line: 7, path, used: [], depth: start, msg: "Backtrack", arrState: [...currArr] });
+            return;
+        }
+        for (let i = start; i < n; i++) {
+            let temp = currArr[start]; currArr[start] = currArr[i]; currArr[i] = temp;
+            if (i !== start) steps.push({ type: STEP_TYPE.SWAP, line: 5, path, used: [], depth: start, msg: `Swap ${start}<->${i}`, arrState: [...currArr], swapIndices: [start, i] });
+            permute(currArr, start + 1);
+            temp = currArr[start]; currArr[start] = currArr[i]; currArr[i] = temp;
+            if (i !== start) steps.push({ type: STEP_TYPE.SWAP, line: 7, path, used: [], depth: start, msg: `Undo Swap`, arrState: [...currArr], swapIndices: [start, i] });
+        }
+        if(start>0) steps.push({ type: STEP_TYPE.BACKTRACK_UP, line: 8, path, used: [], depth: start, msg: "Loop End", arrState: [...currArr] });
+    }
+    permute(arr, 0);
+    return steps;
+}
 
 function calculateTreeLayout(str, algoType) {
-    const layout = {};
-    const n = str.length;
-    let leafCounter = 0;
+    // Reusing the layout logic
+    const layout = {}; const n = str.length; let leafCounter = 0;
     
-    // Helper to simulate Basic/Unique
     function traverseBasic(path, used, depth, sortedChars) {
         if (path.length === n) {
             const x = leafCounter * LEAF_SPACING + (LEAF_SPACING/2);
@@ -497,297 +753,60 @@ function calculateTreeLayout(str, algoType) {
             leafCounter++;
             return { minX: x, maxX: x };
         }
-        
-        const y = depth * LEVEL_HEIGHT + 40;
-        let childrenX = [];
-        
+        const y = depth * LEVEL_HEIGHT + 40; let childrenX = [];
         const charsToUse = algoType === 'UNIQUE' ? sortedChars : str.split('');
-
         for(let i=0; i<n; i++) {
-            // Unique Pruning Logic for Layout
-            if (algoType === 'UNIQUE') {
-                if (used[i] || (i > 0 && charsToUse[i] == charsToUse[i-1] && !used[i-1])) continue;
-            } else {
-                if(used[i]) continue;
-            }
-
-            const newUsed = [...used];
-            newUsed[i] = true;
+            if (algoType === 'UNIQUE') { if (used[i] || (i>0 && charsToUse[i]==charsToUse[i-1] && !used[i-1])) continue; }
+            else { if(used[i]) continue; }
+            const newUsed = [...used]; newUsed[i] = true;
             const bounds = traverseBasic(path + charsToUse[i], newUsed, depth + 1, sortedChars);
             childrenX.push((bounds.minX + bounds.maxX) / 2);
         }
-        
-        const x = childrenX.length > 0 ? childrenX.reduce((a,b)=>a+b,0) / childrenX.length : (leafCounter * LEAF_SPACING);
+        const x = childrenX.length > 0 ? childrenX.reduce((a,b)=>a+b,0)/childrenX.length : (leafCounter*LEAF_SPACING);
         layout[path] = { x, y, depth, parent: path.slice(0, -1) };
-        return { minX: childrenX[0] || x, maxX: childrenX[childrenX.length-1] || x };
+        return { minX: childrenX[0]||x, maxX: childrenX[childrenX.length-1]||x };
     }
-
-    // Helper to simulate Swap
-    // In Swap, the "Path" key will be the characters fixed at [0...depth-1]
+    
     function traverseSwap(currentArr, start) {
         if (start === n) {
             const path = currentArr.join('');
             const x = leafCounter * LEAF_SPACING + (LEAF_SPACING/2);
             const y = start * LEVEL_HEIGHT + 40;
-            // Key note: For swap, the path needs to be unique. 
-            // In standard swap, we might visit same string order differently? 
-            // No, standard swap generates unique paths if input unique. 
-            // We use the 'prefix' as key.
             layout[path] = { x, y, depth: start, parent: path.slice(0, -1) };
-            leafCounter++;
-            return { minX: x, maxX: x };
+            leafCounter++; return { minX: x, maxX: x };
         }
-
-        const y = start * LEVEL_HEIGHT + 40;
-        let childrenX = [];
-        
-        // This loop structure mirrors the swap algo
+        const y = start * LEVEL_HEIGHT + 40; let childrenX = [];
         for(let i=start; i<n; i++) {
-            // Swap
-            let temp = currentArr[start];
-            currentArr[start] = currentArr[i];
-            currentArr[i] = temp;
-            
-            // Recurse
+            let temp = currentArr[start]; currentArr[start] = currentArr[i]; currentArr[i] = temp;
             const bounds = traverseSwap([...currentArr], start + 1);
             childrenX.push((bounds.minX + bounds.maxX) / 2);
-            
-            // Swap back (not strictly needed for layout if we clone array, but needed if we didn't)
-             temp = currentArr[start];
-            currentArr[start] = currentArr[i];
-            currentArr[i] = temp;
+            temp = currentArr[start]; currentArr[start] = currentArr[i]; currentArr[i] = temp;
         }
-
-        // Current Node (Prefix of length 'start')
-        // The key is the prefix string
         const path = currentArr.slice(0, start).join('');
-        const x = childrenX.length > 0 ? childrenX.reduce((a,b)=>a+b,0) / childrenX.length : 0;
-        
+        const x = childrenX.length > 0 ? childrenX.reduce((a,b)=>a+b,0)/childrenX.length : 0;
         layout[path] = { x, y, depth: start, parent: path.slice(0, -1) };
         return { minX: childrenX[0], maxX: childrenX[childrenX.length-1] };
     }
-    
-    if (algoType === 'SWAP') {
-        traverseSwap(str.split(''), 0);
-    } else {
+
+    if (algoType === 'SWAP') traverseSwap(str.split(''), 0);
+    else {
         let chars = str.split('');
         if (algoType === 'UNIQUE') chars.sort();
         traverseBasic("", Array(n).fill(false), 0, chars);
     }
     
-    // Formatting container
     const totalWidth = leafCounter * LEAF_SPACING;
     els.treeContainer.style.width = `${Math.max(totalWidth + 100, els.treeScrollArea.clientWidth)}px`;
     els.treeContainer.style.height = `${(n + 1) * LEVEL_HEIGHT + 100}px`;
     for (let key in layout) layout[key].x += 40;
-    
     return layout;
 }
-
-// ---- Main Logic ----
-
-function resetVisualization(inputStr) {
-    stopPlayback();
-    state.algo = els.algoSelect.value;
-    renderCode();
-    
-    // Update Label based on Algo
-    if (state.algo === 'SWAP') {
-        els.sourceLabel.textContent = "Current Array:";
-    } else {
-        els.sourceLabel.textContent = "Available Chars:";
-    }
-
-    let cleanStr = inputStr.replace(/[^a-zA-Z0-9]/g, '').slice(0, 5).toUpperCase();
-    if (!cleanStr) cleanStr = "ABC";
-    
-    // For Unique, sort visually initially? Or just internally. 
-    // Internally is fine, visual source can remain as typed or sorted.
-    // Let's sort visual input for Unique to make it clear.
-    if (state.algo === 'UNIQUE') {
-        cleanStr = cleanStr.split('').sort().join('');
-    }
-
-    els.input.value = cleanStr;
-    state.str = cleanStr;
-    
-    // 1. Calculate Layout
-    state.treeLayout = calculateTreeLayout(state.str, state.algo);
-    
-    // 2. Generate Steps
-    if (state.algo === 'BASIC') state.steps = generateStepsBasic(state.str);
-    else if (state.algo === 'SWAP') state.steps = generateStepsSwap(state.str);
-    else state.steps = generateStepsUnique(state.str);
-    
-    state.currentStepIndex = -1;
-    
-    // 3. UI Reset
-    buildSourceUI(state.str);
-    els.treeNodes.innerHTML = '';
-    els.treeLines.innerHTML = '';
-    
-    els.countDisplay.textContent = "0";
-    
-    // Calc expected
-    let expected = factorial(state.str.length);
-    if (state.algo === 'UNIQUE') {
-        // Simple calc for unique permutations: n! / (n1! * n2! ...)
-        const counts = {};
-        for(let c of state.str) counts[c] = (counts[c] || 0) + 1;
-        for(let k in counts) expected /= factorial(counts[k]);
-    }
-    els.totalExpected.textContent = expected;
-    
-    els.instruction.textContent = `Ready. Algorithm: ${ALGOS[state.algo].desc}`;
-    els.stepExplanation.textContent = "Tree initialized.";
-    els.varDisplay.innerHTML = `<div>depth: 0</div>`;
-    
-    highlightCode(-1);
-    updateControls();
-}
-
-// --- Generator: Basic ---
-function generateStepsBasic(s) {
-    const steps = [];
-    const n = s.length;
-    
-    function backtrack(currentPath, used, depth) {
-        steps.push({
-            type: STEP_TYPE.VISIT_NODE, line: 4, path: currentPath, used: [...used], depth,
-            msg: depth === 0 ? "Root" : `Added '${currentPath.slice(-1)}'. Path: ${currentPath}`
-        });
-
-        if (currentPath.length === n) {
-            steps.push({ type: STEP_TYPE.FOUND_LEAF, line: 6, path: currentPath, used: [...used], depth, msg: `Found: ${currentPath}` });
-            steps.push({ type: STEP_TYPE.BACKTRACK_UP, line: 12, path: currentPath, used: [...used], depth, msg: "Backtrack" });
-            return;
-        }
-
-        for (let i = 0; i < n; i++) {
-            if (used[i]) continue;
-            used[i] = true;
-            backtrack(currentPath + s[i], used, depth + 1);
-            used[i] = false;
-        }
-        
-        if (depth > 0) steps.push({ type: STEP_TYPE.BACKTRACK_UP, line: 12, path: currentPath, used: [...used], depth, msg: `Finished ${currentPath}` });
-    }
-    backtrack("", Array(n).fill(false), 0);
-    return steps;
-}
-
-// --- Generator: Unique ---
-function generateStepsUnique(s) {
-    const steps = [];
-    const n = s.length;
-    // s is already sorted
-    
-    function backtrack(currentPath, used, depth) {
-        steps.push({
-            type: STEP_TYPE.VISIT_NODE, line: 5, path: currentPath, used: [...used], depth,
-            msg: `Visiting Node: ${currentPath || "Root"}`
-        });
-
-        if (currentPath.length === n) {
-            steps.push({ type: STEP_TYPE.FOUND_LEAF, line: 7, path: currentPath, used: [...used], depth, msg: `Found: ${currentPath}` });
-            return;
-        }
-
-        for (let i = 0; i < n; i++) {
-            if (used[i]) continue;
-            // Pruning check
-            if (i > 0 && s[i] === s[i-1] && !used[i-1]) {
-                // We can add a "Prune" step here if we want to show it explicitly
-                // But usually we just skip.
-                continue;
-            }
-
-            used[i] = true;
-            backtrack(currentPath + s[i], used, depth + 1);
-            used[i] = false;
-        }
-        
-        if(depth > 0) steps.push({ type: STEP_TYPE.BACKTRACK_UP, line: 14, path: currentPath, used: [...used], depth, msg: "Backtracking" });
-    }
-    backtrack("", Array(n).fill(false), 0);
-    return steps;
-}
-
-// --- Generator: Swap ---
-function generateStepsSwap(s) {
-    const steps = [];
-    const arr = s.split('');
-    const n = s.length;
-    
-    function permute(currentArr, start) {
-        // Path key logic: string prefix up to `start`
-        const currentPath = currentArr.slice(0, start).join('');
-        
-        steps.push({
-            type: STEP_TYPE.VISIT_NODE, line: 0, path: currentPath, used: [], depth: start,
-            msg: `Depth ${start}, Fixed Prefix: "${currentPath}"`,
-            arrState: [...currentArr] // Store array state
-        });
-
-        if (start === n) {
-            steps.push({ 
-                type: STEP_TYPE.FOUND_LEAF, line: 2, path: currentPath, used: [], depth: start, 
-                msg: `Found: ${currentArr.join('')}`,
-                arrState: [...currentArr]
-            });
-            steps.push({ 
-                type: STEP_TYPE.BACKTRACK_UP, line: 7, path: currentPath, used: [], depth: start, 
-                msg: "Backtracking",
-                arrState: [...currentArr]
-            });
-            return;
-        }
-
-        for (let i = start; i < n; i++) {
-            // Swap
-            let temp = currentArr[start]; currentArr[start] = currentArr[i]; currentArr[i] = temp;
-            
-            if (i !== start) {
-                steps.push({ 
-                    type: STEP_TYPE.SWAP, line: 5, path: currentPath, used: [], depth: start, 
-                    msg: `Swapping index ${start} ('${currentArr[start]}') with ${i} ('${currentArr[i]}')`,
-                    arrState: [...currentArr], // Capture state after swap
-                    swapIndices: [start, i] 
-                });
-            }
-
-            permute(currentArr, start + 1);
-            
-            // Swap Back
-            temp = currentArr[start]; currentArr[start] = currentArr[i]; currentArr[i] = temp;
-             if (i !== start) {
-                steps.push({ 
-                    type: STEP_TYPE.SWAP, line: 7, path: currentPath, used: [], depth: start, 
-                    msg: `Backtracking: Swapping back indices ${start} and ${i}`,
-                    arrState: [...currentArr], // Capture state after swap back
-                    swapIndices: [start, i]
-                });
-            }
-        }
-        if(start > 0) {
-            steps.push({ 
-                type: STEP_TYPE.BACKTRACK_UP, line: 8, path: currentPath, used: [], depth: start, 
-                msg: "Loop End",
-                arrState: [...currentArr]
-            });
-        }
-    }
-    permute(arr, 0);
-    return steps;
-}
-
-// ---- UI Builders ----
 
 function buildSourceUI(str) {
     els.sourceContainer.innerHTML = '';
     str.split('').forEach((char, idx) => {
         const div = document.createElement('div');
-        div.className = 'w-8 h-8 flex items-center justify-center border border-slate-600 rounded bg-slate-800 text-slate-200 font-mono text-sm transition-all';
+        div.className = 'w-6 h-6 flex items-center justify-center border border-slate-600 rounded bg-slate-800 text-slate-200 font-mono text-xs transition-all shrink-0';
         div.id = `src-${idx}`;
         div.textContent = char;
         els.sourceContainer.appendChild(div);
@@ -795,213 +814,109 @@ function buildSourceUI(str) {
 }
 
 function drawNode(path, isLeaf = false) {
-    const pos = state.treeLayout[path];
-    if (!pos) return;
+    const pos = state.treeLayout[path]; if (!pos) return;
     if (document.getElementById(`node-${path}`)) return;
-
     const node = document.createElement('div');
     node.id = `node-${path}`;
-    node.className = `absolute flex items-center justify-center font-bold font-mono text-sm border-2 rounded-full node-circle z-10 bg-slate-900 border-slate-600 text-slate-400`;
-    node.style.left = `${pos.x - NODE_RADIUS}px`;
-    node.style.top = `${pos.y - NODE_RADIUS}px`;
-    node.style.width = `${NODE_RADIUS * 2}px`;
-    node.style.height = `${NODE_RADIUS * 2}px`;
-    
-    // Label Logic
+    node.className = `absolute flex items-center justify-center font-bold font-mono text-xs border-2 rounded-full node-circle z-10 bg-slate-900 border-slate-600 text-slate-400`;
+    node.style.left = `${pos.x - NODE_RADIUS}px`; node.style.top = `${pos.y - NODE_RADIUS}px`;
+    node.style.width = `${NODE_RADIUS * 2}px`; node.style.height = `${NODE_RADIUS * 2}px`;
     node.textContent = path.length > 0 ? path.slice(-1) : "";
     if (path.length === 0) {
         node.style.borderColor = '#6366f1'; 
-        const icon = document.createElement('i');
-        icon.className = 'fas fa-home text-[10px] text-indigo-400';
-        node.appendChild(icon);
+        node.innerHTML = '<i class="fas fa-home text-[10px] text-indigo-400"></i>';
     }
     if (isLeaf) node.classList.add('node-leaf');
-
     els.treeNodes.appendChild(node);
-
     if (path.length > 0) {
-        const parentPath = path.slice(0, -1);
-        const pPos = state.treeLayout[parentPath];
+        const pPos = state.treeLayout[path.slice(0, -1)];
         if (pPos) {
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("x1", pPos.x);
-            line.setAttribute("y1", pPos.y + NODE_RADIUS);
-            line.setAttribute("x2", pos.x);
-            line.setAttribute("y2", pos.y - NODE_RADIUS);
-            line.setAttribute("stroke", "#475569");
-            line.setAttribute("stroke-width", "2");
+            line.setAttribute("x1", pPos.x); line.setAttribute("y1", pPos.y + NODE_RADIUS);
+            line.setAttribute("x2", pos.x); line.setAttribute("y2", pos.y - NODE_RADIUS);
+            line.setAttribute("stroke", "#475569"); line.setAttribute("stroke-width", "2");
             line.classList.add("tree-line");
-            line.id = `line-${path}`;
             els.treeLines.appendChild(line);
         }
     }
-    
-    if (path.length > 0 && !isLeaf) {
-         node.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-    }
+    if (path.length > 0 && !isLeaf) node.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
 }
 
-// ---- Playback Logic ----
-
-function togglePlayback() {
-    if (state.isPlaying) stopPlayback();
-    else startPlayback();
-}
-
+// Playback Logic
+function togglePlayback() { if (state.isPlaying) stopPlayback(); else startPlayback(); }
 function startPlayback() {
     state.isPlaying = true;
-    els.btnPlay.innerHTML = '<i class="fas fa-pause pl-0"></i>';
+    els.btnPlay.innerHTML = '<i class="fas fa-pause"></i>';
     els.btnPlay.classList.add('bg-amber-500', 'hover:bg-amber-600');
     els.btnPlay.classList.remove('bg-indigo-500', 'hover:bg-indigo-600');
-    
-    if (state.currentStepIndex >= state.steps.length - 1) resetVisualization(state.str); 
+    if (state.currentStepIndex >= state.steps.length - 1) resetVisualization(state.str);
     playLoop();
 }
-
 function stopPlayback() {
-    state.isPlaying = false;
-    clearTimeout(state.timer);
+    state.isPlaying = false; clearTimeout(state.timer);
     els.btnPlay.innerHTML = '<i class="fas fa-play pl-1"></i>';
     els.btnPlay.classList.remove('bg-amber-500', 'hover:bg-amber-600');
     els.btnPlay.classList.add('bg-indigo-500', 'hover:bg-indigo-600');
 }
-
 function playLoop() {
     if (!state.isPlaying) return;
     if (state.currentStepIndex < state.steps.length - 1) {
-        nextStep();
-        state.timer = setTimeout(playLoop, state.speed);
-    } else {
-        stopPlayback();
-    }
+        nextStep(); state.timer = setTimeout(playLoop, state.speed);
+    } else stopPlayback();
 }
-
 function nextStep() {
     if (state.currentStepIndex < state.steps.length - 1) {
-        state.currentStepIndex++;
-        applyStep(state.steps[state.currentStepIndex]);
-        updateControls();
+        state.currentStepIndex++; applyStep(state.steps[state.currentStepIndex]); updateControls();
     }
 }
-
 function prevStep() {
     if (state.currentStepIndex >= 0) {
-        const target = state.currentStepIndex - 1;
-        resetVisualization(els.input.value); 
-        stopPlayback();
-        for(let i=0; i<=target; i++) applyStep(state.steps[i], true);
-        state.currentStepIndex = target;
-        updateControls();
+        const t = state.currentStepIndex - 1; resetVisualization(els.input.value); stopPlayback();
+        for(let i=0; i<=t; i++) applyStep(state.steps[i], true);
+        state.currentStepIndex = t; updateControls();
     }
 }
-
 function highlightCode(line) {
     document.querySelectorAll('.code-line').forEach(el => el.classList.remove('code-active'));
-    if (line >= 0) {
-        const el = document.getElementById(`code-line-${line}`);
-        if(el) el.classList.add('code-active');
-    }
+    if (line >= 0) { document.getElementById(`code-line-${line}`)?.classList.add('code-active'); }
 }
-
 function updateControls() {
     els.btnPrev.disabled = state.currentStepIndex < 0;
     els.btnNext.disabled = state.currentStepIndex >= state.steps.length - 1;
 }
-
 function applyStep(step, fastMode = false) {
-    els.instruction.textContent = step.msg;
-    els.stepExplanation.textContent = step.msg;
-    
+    els.instruction.textContent = step.msg; els.stepExplanation.textContent = step.msg;
     if (!fastMode) {
         highlightCode(step.line);
         els.varDisplay.innerHTML = `<div>depth: ${step.depth}</div><div>path: "${step.path}"</div>`;
     }
-
-    // 1. Update Source UI
     const n = state.str.length;
-    
-    // Update text content if array state is provided (For Swap Algo)
-    if (step.arrState) {
-        for(let i=0; i<n; i++) {
-            const el = document.getElementById(`src-${i}`);
-            if (el) el.textContent = step.arrState[i];
-        }
-    } else {
-        // Reset to original string if no state (Basic/Unique)
-        // This ensures correct chars if switching back from Swap
-        // Only do this if we are not in Swap mode (since Swap mode always has arrState)
-        if (state.algo !== 'SWAP') {
-            const chars = state.str.split(''); // Or sorted for unique
-            // Actually, resetVisualization rebuilds the DOM, so initial state is correct.
-            // We just need to ensure we don't leave stale text if we somehow mixed steps (unlikely).
-        }
-    }
-
+    if (step.arrState) { for(let i=0; i<n; i++) document.getElementById(`src-${i}`).textContent = step.arrState[i]; }
     for(let i=0; i<n; i++) {
         const el = document.getElementById(`src-${i}`);
-        el.className = 'w-8 h-8 flex items-center justify-center border border-slate-600 rounded bg-slate-800 text-slate-200 font-mono text-sm transition-all'; // Reset class
-        
+        el.className = 'w-6 h-6 flex items-center justify-center border border-slate-600 rounded bg-slate-800 text-slate-200 font-mono text-xs transition-all shrink-0';
         if (state.algo === 'SWAP') {
-            // Highlight fixed prefix
-            if (i < step.depth) {
-                el.classList.add('char-used'); // Re-using used style for fixed
-                el.classList.add('border-indigo-500');
-            }
-            
-            // Highlight swapping elements
-            if (step.type === STEP_TYPE.SWAP && step.swapIndices && step.swapIndices.includes(i)) {
-                el.classList.add('bg-indigo-600', 'text-white', 'scale-110', 'border-indigo-400');
-                el.classList.remove('bg-slate-800');
-            }
-        } else {
-            // Basic / Unique logic
-            if (step.used && step.used[i]) el.classList.add('char-used');
-        }
+            if (i < step.depth) { el.classList.add('char-used', 'border-indigo-500'); }
+            if (step.type === STEP_TYPE.SWAP && step.swapIndices && step.swapIndices.includes(i)) el.classList.add('bg-indigo-600', 'text-white', 'scale-110');
+        } else { if (step.used && step.used[i]) el.classList.add('char-used'); }
     }
-
-    // 2. Tree Visualization Logic
     document.querySelectorAll('.node-active').forEach(el => el.classList.remove('node-active'));
-    const nodeId = `node-${step.path}`;
-    
-    switch (step.type) {
-        case STEP_TYPE.VISIT_NODE:
-            drawNode(step.path);
-            const node = document.getElementById(nodeId);
-            if(node) {
-                node.classList.add('node-active');
-                if(step.path.length > 0) document.getElementById(`node-${step.path.slice(0,-1)}`)?.classList.add('node-visited');
-            }
-            break;
-            
-        case STEP_TYPE.SWAP:
-             // Highlight current path node if it exists (it's the parent of what we are about to visit)
-             const parentNode = document.getElementById(nodeId);
-             if(parentNode) parentNode.classList.add('node-active');
-             break;
-
-        case STEP_TYPE.FOUND_LEAF:
-             drawNode(step.path, true); 
-             const leaf = document.getElementById(nodeId);
-             if(leaf) {
-                 leaf.classList.add('node-active', 'node-leaf');
-                 if(!fastMode) els.countDisplay.textContent = parseInt(els.countDisplay.textContent) + 1;
-             }
-             break;
-             
-        case STEP_TYPE.BACKTRACK_UP:
-            const leavingNode = document.getElementById(nodeId);
-            if(leavingNode) {
-                leavingNode.classList.remove('node-active');
-                leavingNode.classList.add('node-visited');
-            }
-            if(step.path.length > 0) document.getElementById(`node-${step.path.slice(0, -1)}`)?.classList.add('node-active');
-            break;
+    drawNode(step.path);
+    const node = document.getElementById(`node-${step.path}`);
+    if (node) {
+        node.classList.add('node-active');
+        if(step.path.length>0) document.getElementById(`node-${step.path.slice(0,-1)}`)?.classList.add('node-visited');
+    }
+    if (step.type === STEP_TYPE.FOUND_LEAF) {
+        drawNode(step.path, true);
+        const leaf = document.getElementById(`node-${step.path}`);
+        if(leaf) { leaf.classList.add('node-active', 'node-leaf'); if(!fastMode) els.countDisplay.textContent = parseInt(els.countDisplay.textContent) + 1; }
+    }
+    if (step.type === STEP_TYPE.BACKTRACK_UP) {
+        if(node) { node.classList.remove('node-active'); node.classList.add('node-visited'); }
+        if(step.path.length>0) document.getElementById(`node-${step.path.slice(0, -1)}`)?.classList.add('node-active');
     }
 }
-
-// Start
-init();
-
 </script>
 </body>
 </html>
